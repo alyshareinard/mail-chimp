@@ -1,5 +1,6 @@
 import pandas as pd 
 import hashlib
+import streamlit as st
 import os
 import sys
 
@@ -111,41 +112,34 @@ def process_contacts(filename):
     
     #create the output dataframe
     output_contacts = contacts[['First Name', 'Last Name', 'Email Address', 'Student First Name', 'Student Last Name', 'Instrument', 'Birthday',  'Inactive Date', "Date Started", "tags"]]
-    output_contacts.to_csv("Cleaned_contacts.csv")
+    return(output_contacts)
+#    output_contacts.to_csv("Cleaned_contacts.csv")
   except:
-    print("File appears to be invalid -- has the mymusicstaff formatting changed?")
-#    print >> sys.stderr, "Exception: %s" % str(e)
-#    sys.exit(1)
+    st.write("File appears to be invalid -- has the mymusicstaff formatting changed?")
 
-  upload = input("Upload to Mailchimp (y/n)?")
-  try:
-    if upload.lower() == 'y':
-      list = 'm'
-      while list.lower() != 'y' and list.lower() != 'n':
-        list = input("Use your default audience (y/n)?")
-        if list.lower() == 'y':
-          list_id = 'a09d2173ad'
-        if list.lower() == 'n':
-          list_id = input("New audience ID (To find audience id, go to 'all contacts', \
-            select the correct audience, then go to settings and select 'audience name and defaults'): ")
-      
-      update_mailchimp(output_contacts, list_id)
-      print("Contacts have been uploaded to Mailchimp.")
-  except:
-    print("Problem uploading to Mailchimp.")
+
+
   
 
 if __name__=="__main__":
-  print("Ready to convert your file.  Please put it in the same directory as this program.")
-  file = input("What is the name of your file? (for default of 'ContactList.csv' just hit enter)")
-  if file[-3:]=='.csv':
-    filename = file
-    process_contacts(filename)
-  elif file.strip()=="":
-    filename = 'ContactList.csv'
-    process_contacts(filename)
-  else:
-    print("invalid file, try again")
+  contactlist = st.file_uploader("Upload your contact list")
+  if contactlist is not None:
+      contactlist = pd.read_csv(contactlist)
+  output_file = process_contacts(contactlist)
+  if len(output_file)>0:
+      @st.cache
+      def convert_df(df):
+          # IMPORTANT: Cache the conversion to prevent computation on every rerun
+          return df.to_csv().encode('utf-8')
+
+      csv = convert_df(output_file)
+
+      st.download_button(
+          label="Download data as CSV",
+          data=csv,
+          file_name='Cleaned_contacts.csv',
+          mime='text/csv',
+      )
   
 
 
