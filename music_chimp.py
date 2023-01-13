@@ -65,12 +65,31 @@ def update_mailchimp(contacts, list_id):
             
     break
 
+# def parse_phone(number):
+#   for char in number:
+#     if isinstance(char, int):
+
+#   let new_number = number.replace(/[^0-9 ]/g, "")
+#   if (new_number.length == 10){
+#     new_number = "+1-"+new_number.substring(0,3) + '-' + new_number.substring(3,6) + '-' + new_number.substring(6,)
+#   } else if((new_number.length === 11) & (new_number[0]==='1')){
+#     new_number = new_number.substring(1,4) + '-' + new_number.substring(4,7) + '-' + new_number.substring(7,)
+#   }
+
+#     return new_number
+#   };
+
 
 def parse_birthday(dates):
+  newdates=[]
+  for date in dates:
+    if isinstance(date, str):
+      newdates.append(date[:-5].replace('-', '/')) 
+    else:
+      newdates.append("")
 
-  dates = [x[:-5].replace('-', '/') for x in dates]
   #dates = [x[:-5] for x in dates]
-  return dates
+  return newdates
 
 '''
 Processes excel download from music school
@@ -88,15 +107,10 @@ def clean_status(statuses):
   return(new_status)
 
 
-def process_contacts(filename):
-  ''' this is the main program that does the processing of the csv file '''
-
-  try:
-    contacts = pd.read_csv(filename, keep_default_na=False, header=0)
-  except:
-    print("File could not be read -- is the spelling correct?")
-    
-  try:
+def process_contacts(contacts):
+    ''' this is the main program that does the processing of the csv file '''
+    print(contacts.Birthday)
+#  try:
     contacts.Birthday = parse_birthday(contacts.Birthday)
     
     #address formatting doesn't work for mailchimp so isn't enabled
@@ -114,8 +128,8 @@ def process_contacts(filename):
     output_contacts = contacts[['First Name', 'Last Name', 'Email Address', 'Student First Name', 'Student Last Name', 'Instrument', 'Birthday',  'Inactive Date', "Date Started", "tags"]]
     return(output_contacts)
 #    output_contacts.to_csv("Cleaned_contacts.csv")
-  except:
-    st.write("File appears to be invalid -- has the mymusicstaff formatting changed?")
+#  except:
+#    st.write("File appears to be invalid -- has the mymusicstaff formatting changed?")
 
 
 
@@ -124,22 +138,24 @@ def process_contacts(filename):
 if __name__=="__main__":
   contactlist = st.file_uploader("Upload your contact list")
   if contactlist is not None:
-      contactlist = pd.read_csv(contactlist)
-  output_file = process_contacts(contactlist)
-  if len(output_file)>0:
-      @st.cache
-      def convert_df(df):
-          # IMPORTANT: Cache the conversion to prevent computation on every rerun
-          return df.to_csv().encode('utf-8')
+    contactlist = pd.read_csv(contactlist)
+    time_to_process = st.button("Ready to process")
+    if time_to_process:
+      output_file = process_contacts(contactlist)
+      if len(output_file)>0:
+          @st.cache
+          def convert_df(df):
+              # IMPORTANT: Cache the conversion to prevent computation on every rerun
+              return df.to_csv().encode('utf-8')
 
-      csv = convert_df(output_file)
+          csv = convert_df(output_file)
 
-      st.download_button(
-          label="Download data as CSV",
-          data=csv,
-          file_name='Cleaned_contacts.csv',
-          mime='text/csv',
-      )
+          st.download_button(
+              label="Download data as CSV",
+              data=csv,
+              file_name='Cleaned_contacts.csv',
+              mime='text/csv',
+          )
   
 
 
